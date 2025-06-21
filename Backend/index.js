@@ -1,81 +1,69 @@
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
-const { promises } = require("nodemailer/lib/xoauth2");
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+    origin: "https://bulk-mail-ebon.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+}));
+
 app.use(express.json());
 
-mongoose.connect("mongodb+srv://vishali:123@cluster0.jvcy0yc.mongodb.net/passkey?retryWrites=true&w=majority&appName=Cluster0").then(function () {
-  console.log("Conected to Db")
-}).catch(function (error) {
-  console.log("Failed connection Db")
-})
+mongoose.connect("mongodb+srv://vishali:123@cluster0.jvcy0yc.mongodb.net/passkey?retryWrites=true&w=majority&appName=Cluster0")
+  .then(() => console.log("Connected to Db"))
+  .catch((error) => console.log("Failed connection Db", error));
 
 //model
-const credential = mongoose.model("credential", {}, "bulkmail")
-
-
-
-
+const credential = mongoose.model("credential", {}, "bulkmail");
 
 app.post("/sendmail", function (req, res) {
+  var msg = req.body.msg;
+  var emaillist = req.body.emaillist;
 
-  var msg = req.body.msg
-  var emaillist = req.body.emaillist
   credential.find().then(function (data) {
+    if (!data.length) {
+      console.log("No credentials found");
+      return res.status(500).send(false);
+    }
 
-    // Use Gmail SMTP with App Password
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: data[0].toJSON().user,
-        pass: data[0].toJSON().pass                    // your 16-character App Password (no spaces)
+        pass: data[0].toJSON().pass,
       },
-
-
     });
 
-
-
-    new Promise(async function (reslove, reject) {
+    new Promise(async function (resolve, reject) {
       try {
         for (var i = 0; i < emaillist.length; i++) {
-
-          // Send mail
-          await transporter.sendMail(
-
-            {
-              from: "dvishaliarumugam98@gmail.com",
-              to: emaillist[i],
-              subject: "Mail from BulkMailer",
-              text: msg,
-            },
-          )
-          console.log("Email sent to :", emaillist[i])
+          await transporter.sendMail({
+            from: data[0].toJSON().user,
+            to: emaillist[i],
+            subject: "Mail from BulkMailer",
+            text: msg,
+          });
+          console.log("Email sent to :", emaillist[i]);
         }
-        reslove("success")
+        resolve("success");
+      } catch (error) {
+        console.error("Error sending mail:", error);
+        reject("Failed");
       }
-      catch (error) {
-        reject("Failed")
-      }
-
-
     }).then(function () {
-      res.send(true)
+      res.send(true);
     }).catch(function () {
-      res.send(false)
-    })
-
+      res.status(500).send(false);
+    });
   }).catch(function (error) {
-    console.log(error)
-  })
-
-
-})
-
+    console.error("DB find error:", error);
+    res.status(500).send(false);
+  });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
