@@ -5,7 +5,10 @@ const { promises } = require("nodemailer/lib/xoauth2");
 const mongoose = require("mongoose")
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ["https://bulk-mail-ebon.vercel.app", "http://localhost:3000"]
+}));
+
 app.use(express.json());
 
 mongoose.connect("mongodb+srv://vishali:123@cluster0.jvcy0yc.mongodb.net/passkey?retryWrites=true&w=majority&appName=Cluster0").then(function () {
