@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const app = express();
 
 app.use(cors({
-    origin: "https://bulk-mail-ebon.vercel.app",
+    origin: "https://bulkmail-g9hr.onrender.com",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
 }));
